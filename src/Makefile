@@ -3,7 +3,7 @@ include ../CONFIG.mine
 
 CC = g++
 
-CFLAGS = -Wall -std=c++11 -pedantic -Wextra -pthread -I$(ROOT)/src -maes -mpclmul -msse4.1 -mavx -march=core2 $(FLAGS) $(OPT) -I$(OSSL)/include
+CFLAGS = -Wall -std=c++11 -pedantic -Wextra -pthread -fPIC -I$(ROOT)/src -maes -mpclmul -msse4.1 -mavx -march=core2 $(FLAGS) $(OPT) -I$(OSSL)/include
 CPPFLAGS = $(CFLAGS) 
 LDLIBS = -L/$(OSSL)/lib -lm -lssl -lcrypto -lmpirxx -lmpir -lcryptopp $(LDFLAGS)
 
@@ -23,7 +23,8 @@ GC = $(patsubst %.cpp,%.o,$(wildcard GC/*.cpp))
 LOCAL_FUNC = $(patsubst %.cpp,%.o,$(wildcard Local/*.cpp))
 EXCEPTIONS = $(patsubst %.cpp,%.o,$(wildcard Exceptions/*.cpp))
 
-LIB = libMPC.a
+LIBNAME = MPC
+LIB = lib$(LIBNAME).so
 
 OBJ = Setup.o Player.o 
 
@@ -36,18 +37,19 @@ $(OBJ): $(SRC)
 	$(CC) $(CFLAGS) -c $*.cpp
 
 $(LIB): $(SYSTEM) $(MATH) $(TOOLS) $(LSSS) $(OFFLINE) $(ONLINE) $(OT) $(PROCESSOR) $(IO) $(FHE) $(GC) $(LOCAL_FUNC) $(EXCEPTIONS)
-	$(AR) -crs libMPC.a $^
+	- $(CC) $(CFLAGS) -shared -o $(LIB) $^
+	- mv libMPC.so ../
 
 Setup.x: $(OBJ) $(LIB)
-	$(CC) $(CFLAGS) -o Setup.x Setup.o $(LIB) $(LDLIBS)
+	$(CC) $(CFLAGS) -o Setup.x Setup.o -L../ -l$(LIBNAME) $(LDLIBS)
 	- mv Setup.x ../
 
 Player.x: $(OBJ) $(LIB)
-	$(CC) $(CFLAGS) -o Player.x Player.o $(LIB) $(LDLIBS)
+	$(CC) $(CFLAGS) -o Player.x Player.o -L../ -l$(LIBNAME) $(LDLIBS)
 	- mv Player.x ../
 
 clean:
-	- rm *.x *.o libMPC.a
+	- rm *.x *.o libMPC.so
 	- cd System ; rm *.o
 	- cd Tools ; rm *.o
 	- cd Math ; rm *.o

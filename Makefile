@@ -17,7 +17,7 @@ circuits:
 	-cd Circuits ; make ; ./convert.sh
 
 clean:
-	-rm  *.x
+	-rm  *.x *.so
 	-cd src ; make clean
 	-cd Test ; make clean
 	-cd Circuits ; make clean 
