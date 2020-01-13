@@ -21,6 +21,7 @@ using namespace std;
 #include "System/Networking.h"
 #include "System/RunTime.h"
 #include "config.h"
+#include "Input_Output/Input_Output_File.h"
 
 #include "Tools/ezOptionParser.h"
 using namespace ez;
@@ -119,6 +120,22 @@ int main(int argc, const char *argv[])
           "Number of FHE Factories we run in parallel\n",
           "-f",           // Flag token.
           "-fhefactories" // Flag token.
+  );
+  opt.add("Inputs/private.txt",
+          0,
+          1,
+          0,
+          "The file containing the secret/private inputs (one line per input channel)",
+          "-si",
+          "-secretInputs"
+  );
+  opt.add("Inputs/public.txt",
+          0,
+          1,
+          0,
+          "The file containing the public inputs (one line per input channel)",
+          "-pi",
+          "-publicInputs"
   );
 
   opt.parse(argc, argv);
@@ -363,10 +380,24 @@ int main(int argc, const char *argv[])
   machine.SetUp_Memory(my_number, memtype);
 
   // Here you configure the IO in the machine
-  //  - This depends on what IO machinary you are using
-  //  - Here we are just using the simple IO class
-  unique_ptr<Input_Output_Simple> io(new Input_Output_Simple);
-  io->init(cin, cout, true);
+
+  std::string secret_inputs_path;
+  opt.get("-secretInputs")->getString(secret_inputs_path);
+  std::ifstream private_input_stream(secret_inputs_path);
+  if (!private_input_stream)
+  {
+    cerr << "could not open file for secret inputs: " << secret_inputs_path << endl;
+  }
+
+  std::string public_inputs_path;
+  opt.get("-publicInputs")->getString(public_inputs_path);
+  std::ifstream public_input_stream(public_inputs_path);
+  if (!public_input_stream)
+  {
+    cerr << "could not open file for public inputs: " << public_inputs_path << endl;
+  }
+
+  unique_ptr<Input_Output_Base> io(new Input_Output_File(secret_inputs_path, public_inputs_path));
   machine.Setup_IO(std::move(io));
 
   // Load the initial tapes for the first program into the schedule
