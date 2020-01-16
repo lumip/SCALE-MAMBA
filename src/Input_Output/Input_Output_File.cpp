@@ -133,7 +133,7 @@ void Input_Output_File::trigger(Schedule &schedule)
 
 void Input_Output_File::debug_output(const stringstream &ss)
 {
-  std::cout << ss.str() << std::endl;
+  std::cout << ss.str();
 }
 
 void Input_Output_File::crash(unsigned int PC, unsigned int thread_num)
