@@ -11,41 +11,13 @@ LDLIBS = -L.. -l$(LIBNAME) -L/$(OSSL)/lib -lm -lssl -lcrypto -lmpirxx -lmpir -lc
 
 all: Test.x Test-FHE.x Test-Adv-FHE.x Test-Circuit.x FHE-P.x Test-Simplify.x Test-Convert.x 
 
-OBJ =  Test.o Test-FHE.o Test-Adv-FHE.o Test-Circuit.o FHE-P.o Test-Simplify.o Test-Convert.o 
+.PRECIOUS: %.o
+%.o: %.cpp
+	$(CC) $(CFLAGS) -o $@ -c $< 
 
-SRC = Test.cpp Test-FHE.cpp Test-Adv-FHE.cpp Test-Circuit.cpp FHE-P.cpp Test-Simplify.cpp Test-Convert.cpp 
-
-$(OBJ): $(SRC)
-	$(CC) $(CFLAGS) -c $*.cpp
-
-Test.x: $(OBJ) 
-	$(CC) $(CFLAGS) -o Test.x Test.o $(LDLIBS)
-	- mv Test.x ../
-
-Test-FHE.x: $(OBJ) 
-	$(CC) $(CFLAGS) -o Test-FHE.x Test-FHE.o $(LDLIBS)
-	- mv Test-FHE.x ../
-
-Test-Adv-FHE.x: $(OBJ)
-	$(CC) $(CFLAGS) -o Test-Adv-FHE.x Test-Adv-FHE.o $(LDLIBS)
-	- mv Test-Adv-FHE.x ../
-
-FHE-P.x: $(OBJ)
-	$(CC) $(CFLAGS) -o FHE-P.x FHE-P.o $(LDLIBS)
-	- mv FHE-P.x ../
-
-
-Test-Circuit.x: $(OBJ)
-	$(CC) $(CFLAGS) -o Test-Circuit.x Test-Circuit.o $(LDLIBS)
-	- mv Test-Circuit.x ../
-
-Test-Simplify.x: $(OBJ)
-	$(CC) $(CFLAGS) -o Test-Simplify.x Test-Simplify.o $(LDLIBS)
-	- mv Test-Simplify.x ../
-
-Test-Convert.x: $(OBJ)
-	$(CC) $(CFLAGS) -o Test-Convert.x Test-Convert.o $(LDLIBS)
-	- mv Test-Convert.x ../
+%.x: %.o
+	$(CC) $(CFLAGS) -o $@ $< $(LDLIBS)
+	- mv $@ ../
 
 clean:
 	- rm *.o 

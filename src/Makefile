@@ -26,10 +26,6 @@ EXCEPTIONS = $(patsubst %.cpp,%.o,$(wildcard Exceptions/*.cpp))
 LIBNAME = MPC
 LIB = lib$(LIBNAME).so
 
-OBJ = Setup.o Player.o 
-
-SRC = Setup.cpp Player.cpp 
-
 %.o: %.cpp
 	$(CC) $(CFLAGS) -o $@ -c $< 
 
@@ -40,11 +36,11 @@ $(LIB): $(SYSTEM) $(MATH) $(TOOLS) $(LSSS) $(OFFLINE) $(ONLINE) $(OT) $(PROCESSO
 	- $(CC) $(CFLAGS) -shared -o $(LIB) $^
 	- mv libMPC.so ../
 
-Setup.x: $(OBJ) $(LIB)
+Setup.x: Setup.o $(LIB)
 	$(CC) $(CFLAGS) -o Setup.x Setup.o -L../ -l$(LIBNAME) $(LDLIBS)
 	- mv Setup.x ../
 
-Player.x: $(OBJ) $(LIB)
+Player.x: Player.o $(LIB)
 	$(CC) $(CFLAGS) -o Player.x Player.o -L../ -l$(LIBNAME) $(LDLIBS)
 	- mv Player.x ../
 
