@@ -7,9 +7,11 @@ clean:
 	-rm *.syn
 	-rm *.rpt
 	-rm area_pt
-	-rm ARCH/*
-	-rm ENTI/*
-	-rm alib-52/*
-	-cd COSIC/SHA-3 ; $(MAKE) clean
-	-cd COSIC/AES ; $(MAKE) clean
+	-rm -r ARCH
+	-rm -r ENTI
+	-rm -r BODY
+	-rm -r PACK
+	-rm -r alib-52
+	-cd SHA-3 ; $(MAKE) clean
+	-cd AES ; $(MAKE) clean
 
