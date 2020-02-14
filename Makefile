@@ -1,26 +1,26 @@
 all: 
-	make progs
-	make test
-	make doc
+	$(MAKE) progs
+	$(MAKE) test
+	$(MAKE) doc
 
 progs:
-	-cd src ; make
+	-cd src ; $(MAKE)
 
 test:
-	-cd Test ; make
+	-cd Test ; $(MAKE)
 
 doc: 
-	-cd Documentation ; make
+	-cd Documentation ; $(MAKE)
 	-cd Compiler ; doxygen doxy.config
 
 circuits:
-	-cd Circuits ; make ; ./convert.sh
+	-cd Circuits ; $(MAKE) ; ./convert.sh
 
 clean:
 	-rm  *.x
-	-cd src ; make clean
-	-cd Test ; make clean
-	-cd Circuits ; make clean 
+	-cd src ; $(MAKE) clean
+	-cd Test ; $(MAKE) clean
+	-cd Circuits ; $(MAKE) clean 
 	-rm Programs/*/*.asm
 
 pclean:
@@ -28,9 +28,9 @@ pclean:
 	-cd Scripts ; rm -r logs
 
 vclean:
-	- make clean
-	- make pclean
-	- cd Documentation ; make clean
+	- $(MAKE) clean
+	- $(MAKE) pclean
+	- cd Documentation ; $(MAKE) clean
 
 format:
 	- clang-format -i */*.cpp
