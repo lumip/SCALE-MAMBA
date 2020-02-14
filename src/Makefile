@@ -28,9 +28,6 @@ LIB = libMPC.a
 %.o: %.cpp
 	$(CC) $(CFLAGS) -o $@ -c $< 
 
-$(OBJ): $(SRC)
-	$(CC) $(CFLAGS) -c $*.cpp
-
 $(LIB): $(SYSTEM) $(MATH) $(TOOLS) $(LSSS) $(OFFLINE) $(ONLINE) $(OT) $(PROCESSOR) $(IO) $(FHE) $(GC) $(LOCAL_FUNC) $(EXCEPTIONS)
 	$(AR) -crs libMPC.a $^
 
