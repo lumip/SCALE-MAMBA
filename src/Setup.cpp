@@ -90,6 +90,10 @@ void init_FHE(bigint &pr, int lg2p, unsigned int n)
       stringstream ss;
       ss << "Data/FHE-Key-" << i << ".key";
       ofstream outk(ss.str().c_str());
+      if (outk.fail())
+        {
+          throw file_error(ss.str());
+        }
       sk.assign(si[i]);
       outk << N << " " << p0 << " " << p1 << " " << pr << " " << hwt << endl
            << ":";
@@ -482,15 +486,15 @@ void init_secret_sharing()
       if (outk.fail())
         {
           throw file_error(ss.str());
-          for (unsigned int j= 0; j < SD.nmacs; j++)
-            {
-              gfp aa;
-              aa.randomize(G);
-              outk << aa << " ";
-            }
-          outk << endl;
-          outk.close();
         }
+      for (unsigned int j= 0; j < SD.nmacs; j++)
+        {
+          gfp aa;
+          aa.randomize(G);
+          outk << aa << " ";
+        }
+      outk << endl;
+      outk.close();
 
       cout << "Finished setting up secret sharing. \nThe underlying MSP is...\n"
            << SD.M << endl;
