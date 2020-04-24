@@ -13,5 +13,5 @@ all:
 
 clean:
 	-rm *.x
-	-cd VHDL; make clean
+	-cd VHDL; $(MAKE) clean
 
