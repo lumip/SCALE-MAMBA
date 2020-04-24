@@ -495,10 +495,10 @@ void init_secret_sharing()
         }
       outk << endl;
       outk.close();
-
-      cout << "Finished setting up secret sharing. \nThe underlying MSP is...\n"
-           << SD.M << endl;
     }
+
+  cout << "Finished setting up secret sharing. \nThe underlying MSP is...\n"
+       << SD.M << endl;
 }
 
 void init_conversion()
