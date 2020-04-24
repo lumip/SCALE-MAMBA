@@ -90,6 +90,10 @@ void init_FHE(bigint &pr, int lg2p, unsigned int n)
       stringstream ss;
       ss << "Data/FHE-Key-" << i << ".key";
       ofstream outk(ss.str().c_str());
+      if (outk.fail())
+        {
+          throw file_error(ss.str());
+        }
       sk.assign(si[i]);
       outk << N << " " << p0 << " " << p1 << " " << pr << " " << hwt << endl
            << ":";
