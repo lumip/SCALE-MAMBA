@@ -21,10 +21,9 @@ clean:
 	-cd src ; $(MAKE) clean
 	-cd Test ; $(MAKE) clean
 	-cd Circuits ; $(MAKE) clean 
-	-rm Programs/*/*.asm
 
 pclean:
-	-cd Programs ; rm */*.bc ; rm */*.sch
+	-cd Programs ; rm */*.bc ; rm */*.sch ; rm */*.asm
 	-cd Scripts ; rm -r logs
 
 vclean:
