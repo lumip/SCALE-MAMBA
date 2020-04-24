@@ -9,6 +9,7 @@ LDLIBS = -L.. -l$(LIBNAME) -L/$(OSSL)/lib -lm -lssl -lcrypto -lmpirxx -lmpir -lc
 
 all: 
 	$(CC) $(CFLAGS) -o convert.x convert.cpp $(LIB) $(LDLIBS)
+	$(CC) $(CFLAGS) -o process.x process.cpp $(LIB) $(LDLIBS)
 
 clean:
 	-rm *.x
