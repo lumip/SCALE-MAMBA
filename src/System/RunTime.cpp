@@ -40,6 +40,7 @@ class thread_info
 public:
   int thread_num;
   const SystemData *SD;
+  bigint pr;
   offline_control_data *OCD;
   SSL_CTX *ctx;
   int me;
@@ -159,6 +160,7 @@ void Run_Scale(unsigned int my_number, unsigned int no_online_threads,
           tinfo[i].thread_num= 20000 + i - nthreads - number_FHE_threads;
         }
       tinfo[i].SD= &SD;
+      tinfo[i].pr= gfp::pr();
       tinfo[i].OCD= &OCD;
       tinfo[i].ctx= ctx;
       tinfo[i].me= my_number;
@@ -241,6 +243,10 @@ void Print_Memory_Info(int player_num, int thread_num)
 void *Main_Func(void *ptr)
 {
   thread_info *tinfo= (thread_info *) ptr;
+
+  //Init thread_local gfp value
+  gfp::init_field(tinfo->pr);
+
   unsigned int num= tinfo->thread_num;
   int me= tinfo->me;
   int verbose= tinfo->verbose;

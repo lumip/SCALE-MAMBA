@@ -11,11 +11,10 @@ use crate::errors::UninitializedRead;
 use crate::lexer::RegisterStruct;
 use crate::span::Span;
 use crate::Compiler;
-use std::num::NonZeroU16;
+use std::num::NonZeroU32;
 // Using tree sets to make the optimizations deterministic
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
-use std::convert::TryFrom;
 
 #[derive(Default)]
 pub struct Pass;
@@ -30,7 +29,7 @@ struct Lifetime {
 struct BlockInfo<'a> {
     lifetimes: RegisterStruct<BTreeMap<u32, Lifetime>>,
     /// Registers seen anywhere and whether their vector length
-    seen: RegisterStruct<BTreeMap<u32, NonZeroU16>>,
+    seen: RegisterStruct<BTreeMap<u32, NonZeroU32>>,
     // Registers read before written (may have been written in a prev block)
     uninit: RegisterStruct<BTreeMap<u32, Vec<Span<'a>>>>,
     // Registers written but never read (may get read in a different block)
@@ -56,7 +55,7 @@ impl<'a> BodyInfo<'a> {
             let span = debug_span!("block", id);
             let _enter = span.enter();
             let mut lifetimes: RegisterStruct<BTreeMap<u32, Lifetime>> = Default::default();
-            let mut seen: RegisterStruct<BTreeMap<u32, NonZeroU16>> = Default::default();
+            let mut seen: RegisterStruct<BTreeMap<u32, NonZeroU32>> = Default::default();
             let mut uninit: RegisterStruct<BTreeMap<u32, Vec<Span<'a>>>> = Default::default();
             let mut dead_write: RegisterStruct<BTreeMap<u32, Vec<Span<'a>>>> = Default::default();
             // We can't insert into `seen` directly as that would mean later uses overwrite the vectorization
@@ -128,7 +127,7 @@ impl<'a> BodyInfo<'a> {
                     JumpMode::Conditional(cnd) => {
                         // FIXME: deduplicate with read logic above
                         let reg = cnd.register.elem;
-                        mark_seen(reg, NonZeroU16::new(1).unwrap());
+                        mark_seen(reg, NonZeroU32::new(1).unwrap());
                         trace!(%reg);
                         // reading from a register makes it not dead code
                         let _ = dead_write.remove(reg);
@@ -210,7 +209,7 @@ fn clean_lifetimes(map: &mut BTreeMap<u32, Lifetime>, base_map: &BTreeMap<u32, u
     *map = all.into_iter().collect();
 }
 
-fn clean(map: &mut BTreeMap<u32, NonZeroU16>) {
+fn clean(map: &mut BTreeMap<u32, NonZeroU32>) {
     if let Some((&cur_r, &cur_v)) = map.iter().next() {
         let mut cur_r = cur_r;
         let mut cur_v = cur_v;
@@ -222,16 +221,13 @@ fn clean(map: &mut BTreeMap<u32, NonZeroU16>) {
                 return true;
             }
             // Is the register part of the current registers vectorized elements?
-            if r < cur_r + u32::from(cur_v.get()) {
+            if r < cur_r + cur_v.get() {
                 // Is the register *also* vectorized and goes beyond the current vector register?
-                let end = r + u32::from(v.get());
-                let cur_end = cur_r + u32::from(cur_v.get());
+                let end = r + v.get();
+                let cur_end = cur_r + cur_v.get();
                 if end > cur_end {
                     // expand register
-                    cur_v = NonZeroU16::new(
-                        u16::try_from(u32::from(cur_v.get()) + end - cur_end).unwrap(),
-                    )
-                    .unwrap();
+                    cur_v = NonZeroU32::new(cur_v.get() + end - cur_end).unwrap();
                 }
                 // do not keep this around, it's covered by the current register
                 false
@@ -262,7 +258,7 @@ impl super::Pass for Pass {
         let mut cross_block: RegisterStruct<BTreeSet<u32>> = Default::default();
         let mut seen_bases: RegisterStruct<BTreeSet<u32>> = Default::default();
         let mut base_map: RegisterStruct<BTreeMap<u32, u32>> = Default::default();
-        let mut seen: RegisterStruct<BTreeMap<u32, NonZeroU16>> = Default::default();
+        let mut seen: RegisterStruct<BTreeMap<u32, NonZeroU32>> = Default::default();
         for (id, block) in blocks.iter().enumerate() {
             let span = debug_span!("block", id);
             let _enter = span.enter();
@@ -279,7 +275,7 @@ impl super::Pass for Pass {
                         // FIXME: this is a bit inefficient (O(n^2)), maybe return a element register -> base register map from `clean`
                         // instead of computing `base_map` on the fly here
                         for (&base_r, base_v) in block_seen {
-                            for r in base_r..base_r + u32::from(base_v.get()) {
+                            for r in base_r..base_r + base_v.get() {
                                 base_map.insert(r, base_r);
                             }
                             block_seen_bases.insert(base_r);
@@ -347,7 +343,7 @@ impl super::Pass for Pass {
             .map(|(cb, seen)| -> u32 {
                 cb.iter()
                     // reserve multiple registers for all vectorized registers
-                    .map(|r| u32::from(seen[r].get()))
+                    .map(|r| seen[r].get())
                     .sum()
             });
 
@@ -384,10 +380,10 @@ impl super::Pass for Pass {
                         free.insert(block_start_idx, u32::max_value() - block_start_idx);
 
                         // FIXME: use an allocator crate
-                        let mut allocate = |size: NonZeroU16, dealloc: Vec<(u32, NonZeroU16)>| {
+                        let mut allocate = |size: NonZeroU32, dealloc: Vec<(u32, NonZeroU32)>| {
                             trace!(?free, ?size, "allocate");
                             for (dealloc, size) in dealloc {
-                                let size = u32::from(size.get());
+                                let size = size.get();
                                 trace!(dealloc);
                                 // See if we fit right behind a hole, before a hole or in the middle of two.
                                 let mut iter = free.iter();
@@ -416,7 +412,7 @@ impl super::Pass for Pass {
                                     }
                                 }
                             }
-                            let size = u32::from(size.get());
+                            let size = size.get();
                             trace!(?free, ?size, "allocate");
                             // Naive "smallest fit" algorithm
                             let smallest = free
@@ -444,7 +440,7 @@ impl super::Pass for Pass {
                         // End location to index map so we know what index ends next.
                         // This is used to deduplicate registers, because if we can remove
                         // an entry from this list, we get the id back for reusing it.
-                        let mut ends: BTreeMap<usize, Vec<(u32, NonZeroU16)>> = BTreeMap::new();
+                        let mut ends: BTreeMap<usize, Vec<(u32, NonZeroU32)>> = BTreeMap::new();
 
                         let idx = allocate(seen[&reg], vec![]);
                         ends.insert(end, vec![(idx, seen[&reg])]);
@@ -520,13 +516,12 @@ impl super::Pass for Pass {
                     } else {
                         let new = i;
                         // Reserve space for the register
-                        i += u32::from(
-                            seen.get(&base)
-                                .unwrap_or_else(|| {
-                                    panic!("register {} not found in {:#?}", r, seen);
-                                })
-                                .get(),
-                        );
+                        i += seen
+                            .get(&base)
+                            .unwrap_or_else(|| {
+                                panic!("register {} not found in {:#?}", r, seen);
+                            })
+                            .get();
                         glob.insert(r, new);
                     }
                 }
